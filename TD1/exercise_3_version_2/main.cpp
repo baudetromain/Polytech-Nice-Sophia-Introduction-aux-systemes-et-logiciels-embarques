@@ -24,21 +24,24 @@ int main(void)
     PORTD |= redLed;
 
     // set to CTC mode
-    TCCR1B &= 0b11101111;
-    TCCR1B |= 0b00001000;
-    TCCR1A &= 0b11111100;
+    TCCR1B &= ~ _BV(WGM13);
+    TCCR1B |=   _BV(WGM12);
+    TCCR1A &= ~ _BV(WGM11) & _BV(WGM10);
 
     // set clock factor to 1024
-    TCCR1B |= 0b00000101;
-    TCCR1B &= 0b11111101;
+    TCCR1B |=   _BV(CS12) | _BV(CS10);
+    TCCR1B &= ~ _BV(CS11);
 
     // set interrupt delay
     OCR1A = 0x3D09;
 
     // enable timer interruptions
-    TIMSK1 |= 0b00000010;
+    TIMSK1 |= _BV(OCIE1A);
 
+    // globally enable interrupts
     sei();
+
+
     while(true)
     {
         
@@ -47,7 +50,7 @@ int main(void)
 
 ISR(TIMER1_COMPA_vect)
 {
-    PORTD = 0;
+    PORTD ^= redLed;
 }
 
 unsigned char Delay (unsigned long a) 
