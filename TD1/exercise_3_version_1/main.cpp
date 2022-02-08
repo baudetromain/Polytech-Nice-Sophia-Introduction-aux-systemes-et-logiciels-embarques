@@ -62,9 +62,9 @@ int main(void)
     {
         if (blink)
         {
-            PIND |= 0b00000100;
+            PORTD |= 0b00000100;
             Delay(100000);
-            PIND &= 0b11111011;
+            PORTD &= 0b11111011;
             Delay(100000);
         }
     }
