@@ -30,8 +30,8 @@
 
 
 //tasks handler defined after the main
-static void vRedBlinkLed(void* pvParameters);
-static void vGreenBlinkLed(void* pvParameters);
+static void vCheckButtonPressed(void*);
+static void vGreenBlinkLed(void*);
 
 //constant to ease the reading....
 const uint8_t redLed   = _BV(PD2);
@@ -41,7 +41,7 @@ SemaphoreHandle_t semaphore;
 
 int main(void)
 {
-    semaphore = xSemaphoreCreateCounting(100, 0);
+    semaphore = xSemaphoreCreateCounting(1, 0);
     DDRD=0b11101111; //D4 as input, all the other as outputs  
     
     PORTD = 0; //all outputs to 0
@@ -80,34 +80,44 @@ int main(void)
     );
 
     
+    // Create task #2
+    xTaskHandle button_handle;
+    xTaskCreate
+    (
+        vCheckButtonPressed,
+        (const char*)"button",
+        configMINIMAL_STACK_SIZE,
+        NULL,
+        0U,
+        &button_handle
+    );
+
+    
     vTaskStartScheduler();
 }
 
-ISR(TIMER1_COMPA_vect)
-{
-    xSemaphoreGive(semaphore);
-}
-
-/**************************************************************************//**
- * \fn static void vGreenBlinkLed(void* pvParameters)
- *
- * \brief toggle the green led.
- *
- * \param[in]   pvParameters
- ******************************************************************************/
-
- static void vGreenBlinkLed(void* pvParameters)
+static void vGreenBlinkLed(void* pvParameters)
 {
     TickType_t xLastWakeUpTime = xTaskGetTickCount();
     while (1)
     {
-        if (xSemaphoreTake(semaphore, portMAX_DELAY))
+        if (xSemaphoreTake(semaphore, portMAX_DELAY) == pdTRUE)
         {
-            while (10)
-            {
-                PORTD ^= greenLed; //PD3 on the micro controller is linked to D3 on the shield
-                vTaskDelayUntil(&xLastWakeUpTime, 500/portTICK_PERIOD_MS);  //passive Delay
-            }
+            PORTD ^= greenLed; //PD3 on the micro controller is linked to D3 on the shield
+            vTaskDelayUntil(&xLastWakeUpTime, 500/portTICK_PERIOD_MS);  //passive Delay
+            PORTD ^= greenLed;
+            vTaskDelayUntil(&xLastWakeUpTime, 500/portTICK_PERIOD_MS);  //passive Delay
+        }
+    }
+}
+
+static void vCheckButtonPressed(void* pvParameters)
+{
+    while (1)
+    {
+        if (PIND & 0b00010000)
+        {
+            xSemaphoreGive(semaphore);
         }
     }
 }
